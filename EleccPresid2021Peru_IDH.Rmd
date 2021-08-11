@@ -1,0 +1,404 @@
+---
+title: "Visualización de la relación entre el Índice de Desarrollo Humano (IDH), y el porcentaje de votación a nivel distrital en las elecciones presidenciales de Perú, 2021."
+author: "Marco Arellano / Twitter: @marellanob"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: 
+       html_document: default
+       pdf_document: default
+---
+
+<style>
+/* resize the widget container */
+.plotly { 
+  width: 100% !important;
+}
+
+/* center the widget */
+div.svg-container {
+  margin: margin() !important;
+}
+</style>
+
+<div style="margin-bottom:100px;">
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = FALSE, fig.align = "center", warning=FALSE, message = FALSE)
+options(knitr.table.format = function() {
+  if (knitr::is_latex_output()) 'latex' else 'pandoc'
+}
+)
+
+webshot::install_phantomjs()
+
+```
+
+``` {r library, include=FALSE}
+library(readxl)
+library(readr)
+library(ggplot2)
+library(car)
+library(tidyverse)
+library(ggplot2)
+library(plotly)
+library(ggridges)
+library(magrittr)
+library(viridis)
+library(viridisLite)
+library(rstatix)
+library(ggpubr)
+library(devtools)
+library(packrat) 
+library(stringr)
+library(extrafont)
+library(tables)
+library(kableExtra)
+library(Hmisc)
+library(forcats)
+library(reactable)
+library(knitr)
+```
+
+
+**Fuentes:**
+
+- Índice de desarrollo Humano (IDH):  Anexo estadístico para 2019, de la publicación del programa de desarrollo de las Naciones Unidas (PNUD), <a href="https://www.pe.undp.org/content/peru/es/home/library/poverty/el-reto-de-la-igualdad.html">El Reto de la Igualdad: Una lectura a las dinámicas territoriales en el Perú.</a>
+- Elecciones Presidenciales 2021, Oficina Nacional de Procesos Electorales del Perú (ONPE).
+- Plataforma Nacional de Datos Abiertos: Oficina Nacinal de Procesos Electorales (ONPE). Data completa de Resultados por mesa de las Elecciones Presidenciales 2021 
+<a href="https://www.datosabiertos.gob.pe/dataset/resultados-por-mesa-de-las-elecciones-presidenciales-2021-primera-vuelta-oficina-nacional-0"> Primera Vuelta</a> y <a href="https://www.datosabiertos.gob.pe/dataset/resultados-por-mesa-de-las-elecciones-presidenciales-2021-segunda-vuelta-oficina-nacional-2"> Segunda Vuelta.</a>
+
+
+**Software:** 
+
+Software de uso libre R (v 4.01), corriendo en aplicación *R Studio (v 1.4.1106)*, se utilizó para la limpieza y procesamiento de los archivos de datos en preparación de la versión final del archivo libre de errores y con la información necesaria para generar los gráficos. 
+
+El documento final de resultados se generó como un archivo *Rmarkdown*, el cual permite la incorporación de material gráfico y textos en un archivo html, resultado final de este ejercicio.
+
+
+**Librerías:** 
+
+ - Sumarización: *readxl*, *readr*, *tidyverse (dplyr)*, *magrittr*, *stringr*
+ - Visualización: *ggplot2*, *plotly*, *viridis*, *kableExtra*,    
+ - Crear Documento: *Rmarkdown*, *knitr*
+
+$~$
+
+#### Introducción
+
+Tras la culminación de los comicios electorales, de este año 2021, y al término de la celebración del Bicentenario de nuestra Independencia. Como suerte de un ejercicio didáctico y expositivo se realizó una comparación entre los votos obtenidos por los partidos políticos, en contienda, con respecto al Índice de Desarrollo Humano en cada distrito del Perú.
+
+
+Importante precisar que estas visualizaciones han sido ejecutadas con fines completamente informativos, aplicando herramientas de visualización de libre acceso.
+
+$~$
+
+#### Pasos a seguir
+
+
+ - Para comenzar, se importaron las bases datos, PNUD y ONPE, dentro de R Studio. Es importante precisar que las bases de datos cuentan con caracteres como acentos y letras que corresponden al alfabeto latino y, estos, no son reconocidos por default por la librería `readr`, que se uso para importar los archivos de datos. Se utilizo encoding= UTF-8 en el comando *read.csv2()* para leer archivos de texto que incluye caracteres propios de lenguaje castellano.
+
+ - Luego importar de manera correcta los datasets, se realizó la limpieza de los datos (verificación de los nombres de los distritos, homogeneizar los nombres de distritos en archivos de PNUD y ONPE).
+
+
+ - Para fines de simplicidad, los partidos políticos participantes en las elecciones de Primera vuelta se agruparon en tres categorías: Fuerza Popular (FP), Perú Libre (PL) , Otros (el resto de los partidos participantes).
+
+
+ - `IDH` corresponde al valor del índice de desarrollo humano a nivel distrital, para 2019, calculado por PNUD en base a en los resultados censales del año 2017.
+ 
+ 
+ - La variable `porc_V` corresponde al porcentaje de votos obtenidos por un partido con respecto al total de votos válidos para el distrito considerado. El número de Votos válidos corresponde al número de Votos emitidos menos el número de Votos en blanco o nulos en cada distrito.
+
+
+ - Para finalizar con la limpieza de los datos, ambos archivos de datos (PNUD, ONPE) se combinaron, agregando la información de PNUD en el archivo ONPE. Cada línea del archivo ONPE se hizo coincidir con la línea del archivo ONPE  (apareamiento)  de acuerdo a la coincidencia de los nombres del DEPARTAMENTO, PROVINCIA, y DISTRITO presentes en ambas tablas de datos.
+
+
+ - A continuación, se procedió a la creación de tablas de resumen estadístico de las variables de interés.
+
+
+ - Finalmente, la creación de las gráficas que nos permitirá la visualización de la información recolectada.
+
+
+ - Información sobre la votación en el extranjero se omitieron en el análisis de la relación entre el IDH y porcentaje de votación según el partido político. 
+
+
+```{r idh, include=FALSE} 
+
+idhperu <- read_csv("/Users/marcoarellano/Documents/DATA SCIENCE/PROYECTS/Jul272021/Data_Indice_Desarrollo_Humano_Distrital_2019.csv",
+                    col_names = TRUE,
+                    trim_ws = TRUE, 
+                    locale = locale('es', encoding = "UTF-8", decimal_mark = "."),
+                    col_types = 
+                      list(UBIGEO = col_double(),
+                           distid = col_integer(),
+                     DEPARTAMENTO = col_character(),
+                        PROVINCIA = col_character(),
+                         Distrito = col_character(),
+                          Pob_hab = col_double(),
+                          Pob_rnk = col_integer(),
+                              IDH = col_double(), 
+                          IDH_rnk = col_integer(),
+                              EVN = col_double(), 
+                          EVN_rnk = col_integer(),
+                           pc_EDC = col_double(), 
+                       pc_EDC_rnk = col_integer(),
+                           yrs_ED = col_double(), 
+                       yrs_ED_rnk = col_integer(),
+                             IFPC = col_double(), 
+                         IFPC_rnk = col_integer()))
+
+
+names(idhperu)[5]<- "DISTRITO"
+
+idhperu %<>% mutate(DISTRITO = str_to_upper(DISTRITO))
+
+distrito_IDH <- idhperu  %>% arrange(DEPARTAMENTO, PROVINCIA, DISTRITO)
+
+```
+
+
+```{r, get data Votacion2021, include=FALSE}
+
+EleccDi2021_long <- read_csv("/Users/marcoarellano/Documents/DATA SCIENCE/PROYECTS/Jul272021/Peru_Elecc_2021_DlongU.csv",
+                             col_names=TRUE, 
+                             locale = locale('es', encoding = "UTF-8", decimal_mark = "."),
+                             col_types = list( 
+                                  VueltaE = col_character() , 
+                             DEPARTAMENTO = col_character() ,  
+                                PROVINCIA = col_character() ,
+                                 DISTRITO = col_character() ,
+                                  GREGION = col_character() ,  
+                           votos_emitidos = col_integer() ,
+                      n_electores_habiles = col_integer(),
+                      votos_nulos_blancos = col_integer(),
+                                  PARTIDO = col_character() , 
+                                   NVOTOS = col_integer()
+                      ))
+
+EleccDi2021_long$VueltaE[EleccDi2021_long$VueltaE == "Primera"] <- "Primera Vuelta"
+EleccDi2021_long$VueltaE[EleccDi2021_long$VueltaE == "Segunda"] <- "Segunda Vuelta"
+
+EleccDi2021_long2 <- EleccDi2021_long %>% 
+  ungroup %>% 
+  arrange_at(c("VueltaE", "DEPARTAMENTO", "PROVINCIA", "DISTRITO", "PARTIDO"),
+             .by_group = TRUE) %>% 
+  mutate(porc_V = round((100* NVOTOS/(votos_emitidos-votos_nulos_blancos)), 2)) %>%
+  mutate(PARTIDO = str_to_upper(PARTIDO))
+
+```
+
+
+``` {r get subset Votacion in Peru, include=FALSE}
+
+c_extranjero <- c("AFRICA", "AMERICA", "ASIA", "EUROPA", "OCEANIA")
+
+EleccDi2021_long_3 <- EleccDi2021_long2 %>% 
+  filter((DEPARTAMENTO %in% c_extranjero) == FALSE) 
+
+head(EleccDi2021_long_3)
+
+```
+
+
+```{r agregar IDH a Votacion in Peru, include=FALSE} 
+
+DISTRLONG_IDH <- EleccDi2021_long_3  %>% full_join(distrito_IDH, by = c("DEPARTAMENTO", "PROVINCIA", "DISTRITO"))
+
+DISTRLONG_IDH$PARTIDO[DISTRLONG_IDH$PARTIDO == "PERU_LIBRE"] <- "PL"
+DISTRLONG_IDH$PARTIDO[DISTRLONG_IDH$PARTIDO == "FUERZA_POPULAR"] <- "FP"
+DISTRLONG_IDH$PARTIDO[DISTRLONG_IDH$PARTIDO == "VOTOS_OTROS"] <- "Otros"
+
+print(DISTRLONG_IDH)
+dim(DISTRLONG_IDH)
+head(DISTRLONG_IDH)
+
+```
+
+```{r  subset data Extranjero}
+EleccDi2021_long2$PARTIDO[EleccDi2021_long2$PARTIDO == "PERU_LIBRE"] <- "PL"
+EleccDi2021_long2$PARTIDO[EleccDi2021_long2$PARTIDO == "FUERZA_POPULAR"] <- "FP"
+EleccDi2021_long2$PARTIDO[EleccDi2021_long2$PARTIDO == "VOTOS_OTROS"] <- "Otros"
+
+EleccDi2021_longEX <- EleccDi2021_long2 %>% 
+  ungroup %>%
+  filter((DEPARTAMENTO %in% c_extranjero) & 
+           ((VueltaE %in% "Segunda Vuelta" & PARTIDO %in% "Otros") == FALSE)) 
+```
+
+$~$
+
+#### Tablas de Resumen estadístico
+
+$~$
+
+##### Total de votos global
+
+```{r  summarize tables1b}
+
+dtkbl1 <- EleccDi2021_long2 %>% ungroup %>%
+   filter ((VueltaE == "Segunda Vuelta" & PARTIDO == "Otros") == FALSE) %>%
+  group_by (VueltaE, PARTIDO) %>% 
+  summarise (nobs=n(),  
+                 Total_VotosE=  sum(votos_emitidos, na.rm=TRUE),
+                Total_ElecHab=  sum(n_electores_habiles, na.rm=TRUE),
+           Total_Votos_NulosB=  sum(votos_nulos_blancos, na.rm=TRUE),
+              Total_Num_Votos=  sum(NVOTOS, na.rm=TRUE),
+             .groups = 'keep'
+              )  
+  
+kable(dtkbl1,  "html") %>% 
+  kable_paper() %>%
+  add_header_above(c(" " = 1, "Partido" = 1, "N_Obs" = 1, "V Emitidos" = 1, "Electores" = 1, 
+                     "V_Nulos_B" = 1,  "Total_NVotos" = 1))  %>%  
+  scroll_box(width = "100%")
+
+```
+
+$~$
+
+##### Total de votos en el extranjero
+
+```{r summarise table extranjero}
+
+ELECEXTRJ<- EleccDi2021_longEX %>%
+  group_by(DEPARTAMENTO, PARTIDO, VueltaE) %>% 
+  summarise(nobs = n(), 
+            min_percV = min(porc_V, na.rm=TRUE), 
+            median_percV = median(porc_V, na.rm=TRUE),   
+            max_percV = max(porc_V, na.rm=TRUE), 
+            Total_VotosE = sum(votos_emitidos, na.rm=TRUE),
+            Total_ElecHab = sum(n_electores_habiles, na.rm=TRUE) ,
+            Total_Votos_NulosB = sum(votos_nulos_blancos, na.rm=TRUE),
+            min_Num_Votos = min(NVOTOS, na.rm=TRUE),
+            max_Num_Votos = max(NVOTOS, na.rm=TRUE),
+            median_Num_Votos = median(NVOTOS, na.rm=TRUE),
+            .groups = 'keep'
+              )  
+
+
+kable(ELECEXTRJ,  "html") %>% 
+  kable_paper() %>%
+  add_header_above(c(" " = 3, "N_Obs" = 1, "Votacion(%)" = 3, "V Emitidos" = 1, 
+                     "Electores" = 1, "V_Nulos_B" = 1,  "Total_NVotos" = 3))  %>%  
+  scroll_box(width = "100%", height = "400px")
+```
+
+$~$
+
+##### Porcentaje de Voto y el IDH en el Perú
+
+```{r  summarize tables3b}
+
+dtkbl3b <- DISTRLONG_IDH %>% ungroup %>%
+  filter((VueltaE == "Segunda Vuelta" & PARTIDO == "Otros") == FALSE) %>%
+  group_by(DEPARTAMENTO, PARTIDO, VueltaE ) %>% 
+  summarise(n_distritos = n(),
+            min_percV = min(porc_V, na.rm=TRUE), 
+            median_percV = median(porc_V, na.rm=TRUE), 
+            max_percV = max(porc_V, na.rm=TRUE),
+            min_IDH= min(IDH, na.rm=TRUE),
+            max_IDH= max(IDH, na.rm=TRUE),
+            med_IDH= median(IDH, na.rm=TRUE),
+            min_Habitantes_2019 = min(Pob_hab, na.rm=TRUE),
+            max_Habitantes_2019 = max(Pob_hab, na.rm=TRUE),
+            med_Habitantes_2019 = median(Pob_hab, na.rm=TRUE),
+            .groups = 'keep'
+            )  
+ 
+ kbl(dtkbl3b,  "html") %>% 
+  kable_paper() %>%
+  add_header_above(c(" " = 3, "N_Distritos" = 1, "Votacion (%)" = 3, "IDH" = 3, "Poblacion (Hab)" = 3))  %>%  
+  scroll_box(width = "100%", height = "400px")
+
+```
+
+$~$
+
+$~$
+
+#### Gráficas
+
+```{r TEXT0 graphs1}
+text0 <- paste0( "DEPARTAMENTO: ", DISTRLONG_IDH$DEPARTAMENTO , "<br />", "PROVINCIA: ", DISTRLONG_IDH$PROVINCIA,"<br />", "DISTRITO: ", DISTRLONG_IDH$DISTRITO )
+
+cols <- c("Otros" = "blue", "PL" = "red", "FP" = "orange")
+```
+
+La primera gráfica es a nivel nacional, usa datos a nivel distrital (n=1184), y describe las preferencias electorales a nivel distrital, según el porcentaje de votación logrado por los distintos partidos políticos participantes: Fuerza Popular (FP), Perú Libre (PL), Otros (resto de partidos). Cada punto en la gráfica representa un distrito, identificados por el valor IDH (eje X) y el porcentaje de votación (eje Y) según cada una de las categorías de partido político que participo en las elecciones en primera y segunda vuelta; los puntos son coloreados según categoría de partido: FP, PL, Otros. La categoría Otros tan solo está presente en la primera vuelta. 
+
+
+Las gráficas se presentan en un documento HTML. El carácter interactivo del gráfico se expresa en la posibilidad de conocer a qué distrito, provincia, departamento, valor de votación e IDH corresponde a cada punto en la gráfica, simplemente colocando el cursor sobre el punto. Aparecerá un cuadro con la información, coloreado según la categoría partidaria.
+
+
+La síntesis de la votación se realiza mediante el ajuste local de una curva que busca seguir la tendencia de votación conforme el valor IDH se incrementa desde el mínimo (0.0912, Lagunas, Ayabaca, Piura, extrema izquierda del eje X) a máximo (0.8452, La Molina, Lima, Lima, extrema derecha del eje X). Las curvas de tendencia de votación se estiman para cada categoría partidaria, en primera y segunda vuelta. <a href="https://stat.ethz.ch/R-manual/R-devel/library/mgcv/html/smooth.terms.html">Bandas de confiabilidad </a> alrededor de las curvas nos permite visualizar la magnitud de variabilidad a lo largo de la curva, sección de banda estrecha indica baja variabilidad de las observaciones para un determinado valor de IDH; cuanto más ancha la banda mayor es la variabilidad. 
+
+##### Gráfico 1
+
+```{r graphs1, fig.height=6, fig.fullwidth=TRUE, fig.align='center'}
+g <- DISTRLONG_IDH %>% 
+  ggplot(aes(x=IDH,  y=porc_V)) +
+  geom_point( aes( colour = PARTIDO ,  text=text0), size=0.4, alpha=0.3 ) + 
+  geom_smooth( aes( colour = PARTIDO ), method="loess") + 
+  scale_color_manual(values = cols) +
+  theme(plot.title = element_text( family = "Arial" , size=14, face = "bold"),
+       plot.subtitle = element_text(family= "Arial", size = 12 ),
+        axis.title.x = element_text( family = "Arial", size=12),
+        axis.title.y = element_text( family = "Arial", size=12),
+     legend.position = "bottom" ) +
+  labs (title = "IDH VS PORCENTAJE DE VOTOS POR PARTIDO" ,
+        subtitle = "Peru - Elecciones Presidenciales 2021",
+            x = "Distrito IDH " ,
+            y = "Porcentaje de Votos (%)") +
+  facet_grid(cols = vars(VueltaE))
+
+fig <- ggplotly(g, tooltip=c("text0", "VueltaE",  "PARTIDO", "x", "y")) %>% 
+  layout(legend = list(title=list(text='<b> PARTIDOS:  </b>'),
+                                orientation = "h",
+                                xanchor = "center", 
+                                x = 0.5,
+                                y = -0.1,
+                                itemsizing='constant'))
+fig               
+```
+$~$
+
+La segunda gráfica presenta similar información, distinguiendo según el departamento. Curvas de tendencia pierden representatividad conforme el número de distritos por departamento disminuyen. 
+
+
+##### Gráfico 2 
+
+```{r plot_provincias,warning=FALSE,message=FALSE, fig.height=20, fig.fullwidth = TRUE}
+
+p <- DISTRLONG_IDH %>% 
+  ggplot(aes(x = IDH, y = porc_V)) +
+  geom_point( aes( colour = PARTIDO ,  text=text0) , size=0.3, alpha=0.5 ) + 
+  geom_smooth( aes( colour = PARTIDO ), method="loess", se = FALSE) +
+  scale_y_continuous(limits = c(0, 100), breaks = seq(0, 100, by = 25)) +
+  scale_color_manual(values = cols) +
+  theme(plot.title = element_text(family= "Arial"  ,  face="bold",   size = 14 ),
+        plot.subtitle = element_text(family= "Arial", size = 12 ),
+        axis.title.x = element_text(family= "Arial", size = 12 ),
+        axis.text.x = element_text(size = 7),
+        axis.text.y = element_text(size = 7),
+        axis.title.y = element_text(size= 12, family= "Arial" ),
+        plot.margin = margin(t = 4, r = 1, b = 4 , l = 0, "cm"),
+        legend.title = element_blank(),
+        panel.spacing.x=unit(0.3, "lines"), panel.spacing.y=unit(0.8, "lines"),
+        panel.background = element_rect(fill = "#E9E9E9", color = "#E9E9E9"),
+        panel.grid.major.y = element_blank(),
+        panel.grid.minor.x = element_blank()) +
+  labs(title = "IDH VS PORCENTAJE DE VOTOS POR PARTIDO" ,
+        plot.subtitle = "Peru - Elecciones Presidenciales 2021",
+            x = "Distrito IDH " ,
+            y = "Porcentaje de Votos (%)") +
+  facet_wrap(DEPARTAMENTO ~ VueltaE, scales = "free_x", ncol = 6)
+
+fig2 <- ggplotly(p, tooltip=c("text0", "VueltaE",  "PARTIDO", "x", "y")) %>% 
+           layout(legend = list(title=list(text='<b> PARTIDO:  </b>'),
+                                orientation = "h",
+                                xanchor = "center",
+                                x = 0.5,
+                                y = -0.1,
+                                itemsizing='constant'))
+
+fig2
+```
