@@ -1,6 +1,6 @@
 # Elecciones Presidenciales Perú 2021 y el IDH
 
-Elecciones Presidenciales Peru 2021 y el IDH es un proyecto que busca exponer, mediante dos gráficos, si es que existe una relacion entre el Indice de desarrollo humano (IDH), a nivel distrital, y el porcentaje de votos obtenidos por partido politico. 
+Elecciones Presidenciales Perú 2021 y el IDH es un proyecto que busca exponer, mediante dos gráficos, si es que existe una relación entre el índice de desarrollo humano (IDH), a nivel distrital, y el porcentaje de votos obtenidos por partido político. 
 
 
 ## Software:
