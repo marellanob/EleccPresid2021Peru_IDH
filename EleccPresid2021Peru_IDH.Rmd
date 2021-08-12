@@ -109,7 +109,7 @@ $~$
  - La variable `porc_V` corresponde al porcentaje de votos obtenidos por un partido con respecto al total de votos válidos para el distrito considerado. El número de Votos válidos corresponde al número de Votos emitidos menos el número de Votos en blanco o nulos en cada distrito.
 
 
- - Para finalizar con la limpieza de los datos, ambos archivos de datos (PNUD, ONPE) se combinaron, agregando la información de PNUD en el archivo ONPE. Cada línea del archivo ONPE se hizo coincidir con la línea del archivo ONPE  (apareamiento)  de acuerdo a la coincidencia de los nombres del DEPARTAMENTO, PROVINCIA, y DISTRITO presentes en ambas tablas de datos.
+ - Para finalizar con la limpieza de los datos, ambos archivos de datos (PNUD, ONPE) se combinaron, agregando la información de PNUD en el archivo ONPE. Cada línea del archivo PNUD se hizo coincidir con la línea del archivo ONPE  (apareamiento)  de acuerdo a la coincidencia de los nombres del DEPARTAMENTO, PROVINCIA, y DISTRITO presentes en ambas tablas de datos.
 
 
  - A continuación, se procedió a la creación de tablas de resumen estadístico de las variables de interés.
