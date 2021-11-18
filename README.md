@@ -3,13 +3,19 @@
 Elecciones Presidenciales Perú 2021 y el IDH es un proyecto que busca exponer, mediante dos gráficos, si es que existe una relación entre el índice de desarrollo humano (IDH), a nivel distrital, y el porcentaje de votos obtenidos por partido político. 
 
 
-## Proyecto Rpubs Link:
-
-
-https://rpubs.com/marellanob/EleccPresid2021Peru_IDH
-
+## Gráfica IDH vs Porcentaje de Votos:
 
 <img width="1680" alt="idhvsvotos2021" src="https://user-images.githubusercontent.com/79113395/142359791-5a824a45-52b0-4e3f-8400-882023c15bc0.png">
+
+
+## Gráfica IDH vs Porcentaje de Votos por Provincia:
+
+![PROVINCIAS IDH VOTOS](https://user-images.githubusercontent.com/79113395/142360899-dc8ed514-fbfb-4330-9846-a799be005833.png)
+
+
+## Proyecto Rpubs Link:
+
+https://rpubs.com/marellanob/EleccPresid2021Peru_IDH
 
 
 ## Software:
